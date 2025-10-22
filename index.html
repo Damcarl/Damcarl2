@@ -1,102 +1,112 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizzazione Dati Google Sheets</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        .container {
-            width: 80%;
-            margin: 20px auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background-color: #fff;
-        }
-        th, td {
-            padding: 8px 12px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        img {
-            width: 100px;
-            height: auto;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dati da Google Sheets con Immagini</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      width: 90%;
+      margin: 30px auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+    }
+
+    th, td {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    img {
+      max-width: 120px;
+      height: auto;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Visualizzazione Dati da Google Sheets</h1>
-        <table id="data-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Descrizione</th>
-                    <th>Data</th>
-                    <th>Immagine</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- I dati verranno caricati dinamicamente qui -->
-            </tbody>
-        </table>
-    </div>
+  <div class="container">
+    <h1>Dati da Google Sheets</h1>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Descrizione</th>
+          <th>Data</th>
+          <th>Immagine</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dati caricati dinamicamente -->
+      </tbody>
+    </table>
+  </div>
 
-    <script>
-        const sheetId = '11G8nsileMwydMZYbftLcPN84ljb3yP_W3fTjRwmKm3Q';  // ID del foglio Google
-        const apiUrl = `https://spreadsheets.google.com/feeds/list/${sheetId}/od6/public/values?alt=json`;
+  <script>
+    const sheetId = '11G8nsileMwydMZYbftLcPN84ljb3yP_W3fTjRwmKm3Q';
+    const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                const rows = data.feed.entry;
-                const tableBody = document.querySelector('#data-table tbody');
-                rows.forEach(row => {
-                    const id = row.gsx$id.$t;
-                    const nome = row.gsx$nome.$t;
-                    const descrizione = row.gsx$descrizione.$t;
-                    const dataCreazione = row.gsx$data.$t;
-                    const immagineUrl = row.gsx$immagine.$t;  // Colonna F
+    // Funzione per convertire link di Google Drive in visualizzazione immagine
+    function convertiLinkDrive(link) {
+      const match = link.match(/\/d\/([a-zA-Z0-9_-]+)\//);
+      if (match && match[1]) {
+        const fileId = match[1];
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      return link; // se non è un link Drive, restituisci l’originale
+    }
 
-                    // Verifica se il link è di Google Drive e modifica il formato per visualizzare l'immagine
-                    let imageUrl = immagineUrl;
-                    if (imageUrl.includes("drive.google.com")) {
-                        // Estrai l'ID del file dal link di Google Drive
-                        const fileIdMatch = immagineUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-                        if (fileIdMatch) {
-                            const fileId = fileIdMatch[1];
-                            imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-                        }
-                    }
+    fetch(sheetUrl)
+      .then(res => res.text())
+      .then(text => {
+        const json = JSON.parse(text.substr(text.indexOf('{')));
+        const rows = json.table.rows;
+        const tbody = document.querySelector('#data-table tbody');
 
-                    const rowHtml = `
-                        <tr>
-                            <td>${id}</td>
-                            <td>${nome}</td>
-                            <td>${descrizione}</td>
-                            <td>${dataCreazione}</td>
-                            <td><img src="${imageUrl}" alt="Immagine"></td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += rowHtml;
-                });
-            })
-            .catch(error => {
-                console.error("Errore nel recupero dei dati:", error);
-            });
-    </script>
+        rows.forEach(row => {
+          const id = row.c[0]?.v || '';
+          const nome = row.c[1]?.v || '';
+          const descrizione = row.c[2]?.v || '';
+          const data = row.c[3]?.v || '';
+          const immagineRaw = row.c[5]?.v || '';
+
+          let imageUrl = immagineRaw;
+          if (imageUrl.includes("drive.google.com")) {
+            imageUrl = convertiLinkDrive(imageUrl);
+          }
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${id}</td>
+            <td>${nome}</td>
+            <td>${descrizione}</td>
+            <td>${data}</td>
+            <td>${imageUrl ? `<img src="${imageUrl}" alt="Immagine">` : '—'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("Errore nel caricamento dati:", err);
+      });
+  </script>
 </body>
 </html>
