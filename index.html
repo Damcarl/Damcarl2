@@ -228,9 +228,16 @@
                 download: true,
                 header: true,
                 skipEmptyLines: true,
-                dynamicTyping: true,
+                dynamicTyping: false, // Importante: mantieni tutto come stringa
+                transformHeader: function(header) {
+                    // Pulisci gli spazi dalle intestazioni
+                    return header.trim();
+                },
                 complete: function(results) {
                     console.log('Dati caricati:', results);
+                    console.log('Headers:', results.meta.fields);
+                    console.log('Prima riga:', results.data[0]);
+                    
                     if (results.data && results.data.length > 0) {
                         displayTable(results.data, results.meta.fields);
                         document.getElementById('loading').style.display = 'none';
@@ -320,17 +327,32 @@
                 const tr = document.createElement('tr');
                 headers.forEach((header) => {
                     const td = document.createElement('td');
-                    const value = row[header];
+                    let value = row[header];
+                    
+                    // Pulisci il valore da spazi bianchi
+                    if (typeof value === 'string') {
+                        value = value.trim();
+                    }
+                    
+                    console.log(`Header: "${header}", Value: "${value}", Type: ${typeof value}`);
                     
                     // Gestione colonna Immagine
                     if (header.toLowerCase() === 'immagine' || 
                         header.toLowerCase() === 'foto' || 
                         header.toLowerCase() === 'image') {
                         
-                        if (value && typeof value === 'string') {
-                            const imageUrl = extractUrlFromImageFormula(value);
+                        console.log('Colonna immagine trovata! Valore:', value);
+                        
+                        if (value && value !== '') {
+                            // Estrai URL dalla formula o usa direttamente il valore
+                            let imageUrl = extractUrlFromImageFormula(value);
+                            
+                            console.log('URL estratto:', imageUrl);
+                            
                             if (imageUrl) {
                                 const finalUrl = convertGoogleDriveUrl(imageUrl);
+                                console.log('URL finale:', finalUrl);
+                                
                                 const img = document.createElement('img');
                                 img.src = finalUrl;
                                 img.alt = 'Immagine';
@@ -344,12 +366,17 @@
                                 img.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
                                 img.onmouseout = function() { this.style.transform = 'scale(1)'; };
                                 img.onclick = () => openModal(finalUrl);
+                                img.onload = function() {
+                                    console.log('Immagine caricata con successo!');
+                                };
                                 img.onerror = function() {
+                                    console.error('Errore caricamento immagine:', finalUrl);
                                     this.style.display = 'none';
                                     td.innerHTML = '<span style="color:#999;font-style:italic;">⚠️ Immagine non disponibile</span>';
                                 };
                                 td.appendChild(img);
                             } else {
+                                console.log('Nessun URL valido trovato');
                                 td.textContent = '';
                             }
                         } else {
