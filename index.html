@@ -311,29 +311,46 @@
                     // Gestione dei diversi tipi di dati
                     if (value === null || value === undefined || value === '') {
                         td.textContent = '';
-                    } else if (typeof value === 'string' && isValidUrl(value) && isImageUrl(value)) {
-                        // Se è un URL di immagine, mostrala (converte automaticamente link Google Drive)
-                        const imageUrl = convertGoogleDriveUrl(value);
-                        const img = document.createElement('img');
-                        img.src = imageUrl;
-                        img.alt = 'Immagine';
-                        img.style.maxWidth = '120px';
-                        img.style.maxHeight = '120px';
-                        img.style.borderRadius = '8px';
-                        img.style.objectFit = 'cover';
-                        img.style.cursor = 'pointer';
-                        img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                        img.style.transition = 'transform 0.2s';
-                        img.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
-                        img.onmouseout = function() { this.style.transform = 'scale(1)'; };
-                        img.onclick = () => openModal(imageUrl);
-                        img.onerror = function() {
-                            this.style.display = 'none';
-                            td.textContent = '⚠️ Immagine non disponibile';
-                            td.style.color = '#999';
-                            td.style.fontStyle = 'italic';
-                        };
-                        td.appendChild(img);
+                    } else if (typeof value === 'string' && isValidUrl(value)) {
+                        // Controlla se è un'immagine SOLO se contiene estensioni immagine o è nella colonna "Foto"
+                        const isImageColumn = header.toLowerCase().includes('foto') || 
+                                            header.toLowerCase().includes('immagine') || 
+                                            header.toLowerCase().includes('image') ||
+                                            header === 'F';
+                        const hasImageExtension = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(value);
+                        
+                        if ((isImageColumn || hasImageExtension) && value.includes('drive.google.com')) {
+                            // Converti e mostra l'immagine
+                            const imageUrl = convertGoogleDriveUrl(value);
+                            const img = document.createElement('img');
+                            img.src = imageUrl;
+                            img.alt = 'Immagine';
+                            img.style.maxWidth = '120px';
+                            img.style.maxHeight = '120px';
+                            img.style.borderRadius = '8px';
+                            img.style.objectFit = 'cover';
+                            img.style.cursor = 'pointer';
+                            img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                            img.style.transition = 'transform 0.2s';
+                            img.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
+                            img.onmouseout = function() { this.style.transform = 'scale(1)'; };
+                            img.onclick = () => openModal(imageUrl);
+                            img.onerror = function() {
+                                this.style.display = 'none';
+                                td.textContent = '⚠️ Immagine non disponibile';
+                                td.style.color = '#999';
+                                td.style.fontStyle = 'italic';
+                            };
+                            td.appendChild(img);
+                        } else {
+                            // Per altri link, mostra come link cliccabile
+                            const a = document.createElement('a');
+                            a.href = value;
+                            a.target = '_blank';
+                            a.textContent = '🔗 Link';
+                            a.title = value;
+                            td.appendChild(a);
+                        }
                     } else if (typeof value === 'number') {
                         // Formatta i numeri
                         td.textContent = value.toLocaleString('it-IT');
