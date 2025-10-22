@@ -141,6 +141,40 @@
             border-top: 1px solid #e0e0e0;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .close-modal:hover {
+            color: #ccc;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -180,6 +214,11 @@
         <div class="last-update" id="lastUpdate"></div>
     </div>
 
+    <div class="modal" id="imageModal" onclick="closeModal()">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <img id="modalImage" src="" alt="Immagine ingrandita">
+    </div>
+
     <script>
         // URL del Google Sheet in formato CSV
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfmyC5nWIjkcYuZ-vs0MlqWT_EJ48QqKz_64Of8PxTqSSgVFVdKG0fDRGT03d8o0xdip0CeR8_CWqK/pub?gid=0&single=true&output=csv';
@@ -208,6 +247,23 @@
                     showError('Impossibile caricare i dati. Verifica che il foglio sia pubblicato correttamente.');
                 }
             });
+        }
+
+        function isValidUrl(string) {
+            if (!string) return false;
+            try {
+                const url = new URL(string);
+                return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function isImageUrl(url) {
+            if (!url) return false;
+            // Controlla estensioni immagini o URL Google Drive
+            return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url) || 
+                   url.includes('drive.google.com/uc');
         }
 
         function displayTable(data, headers) {
@@ -243,8 +299,30 @@
                     const value = row[header];
                     
                     // Gestione dei diversi tipi di dati
-                    if (value === null || value === undefined) {
+                    if (value === null || value === undefined || value === '') {
                         td.textContent = '';
+                    } else if (typeof value === 'string' && isValidUrl(value) && isImageUrl(value)) {
+                        // Se è un URL di immagine, mostrala
+                        const img = document.createElement('img');
+                        img.src = value;
+                        img.alt = 'Immagine';
+                        img.style.maxWidth = '120px';
+                        img.style.maxHeight = '120px';
+                        img.style.borderRadius = '8px';
+                        img.style.objectFit = 'cover';
+                        img.style.cursor = 'pointer';
+                        img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        img.style.transition = 'transform 0.2s';
+                        img.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
+                        img.onmouseout = function() { this.style.transform = 'scale(1)'; };
+                        img.onclick = () => openModal(value);
+                        img.onerror = function() {
+                            this.style.display = 'none';
+                            td.textContent = '⚠️ Immagine non disponibile';
+                            td.style.color = '#999';
+                            td.style.fontStyle = 'italic';
+                        };
+                        td.appendChild(img);
                     } else if (typeof value === 'number') {
                         // Formatta i numeri
                         td.textContent = value.toLocaleString('it-IT');
@@ -256,6 +334,16 @@
                 });
                 tbody.appendChild(tr);
             });
+        }
+
+        function openModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            document.getElementById('modalImage').src = imageSrc;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
         }
 
         function showError(message) {
