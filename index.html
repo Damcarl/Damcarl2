@@ -177,23 +177,18 @@
                     
                     bodyHTML += '<tr>';
                     headers.forEach(header => {
-                        const value = row[header] || '';
+                        const value = (row[header] || '').toString().trim();
                         
-                        // Se il valore contiene drive.google.com ed è nella colonna F o Immagine
-                        if (value.includes('drive.google.com') && 
-                            (header.toLowerCase().includes('immagine') || 
-                             header.toLowerCase().includes('foto') ||
-                             header.toLowerCase().includes('image') ||
-                             header === 'F' || header === '')) {
-                            
-                            // Converti il link in formato visualizzabile
-                            let imgUrl = value;
+                        // Se il valore contiene un link Google Drive immagine
+                        if (value.includes('drive.google.com') && value.includes('/file/d/')) {
+                            // Estrai l'ID e crea il link diretto
                             const match = value.match(/\/d\/([a-zA-Z0-9_-]+)/);
                             if (match) {
-                                imgUrl = `https://drive.google.com/uc?id=${match[1]}`;
+                                const imgUrl = `https://drive.google.com/uc?id=${match[1]}`;
+                                bodyHTML += `<td><img src="${imgUrl}" alt="Immagine" onclick="openModal('${imgUrl}')" onerror="this.parentElement.innerHTML='❌ Errore'"></td>`;
+                            } else {
+                                bodyHTML += `<td>${value}</td>`;
                             }
-                            
-                            bodyHTML += `<td><img src="${imgUrl}" onclick="openModal('${imgUrl}')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Ctext x=\'10\' y=\'50\'%3E❌%3C/text%3E%3C/svg%3E'"></td>`;
                         } else {
                             bodyHTML += `<td>${value}</td>`;
                         }
