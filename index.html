@@ -334,24 +334,23 @@
                         value = value.trim();
                     }
                     
-                    console.log(`Header: "${header}", Value: "${value}", Type: ${typeof value}`);
+                    // Gestione colonna Immagine (anche se il nome è vuoto o diverso)
+                    const isImageColumn = header.toLowerCase() === 'immagine' || 
+                                         header.toLowerCase() === 'foto' || 
+                                         header.toLowerCase() === 'image';
                     
-                    // Gestione colonna Immagine
-                    if (header.toLowerCase() === 'immagine' || 
-                        header.toLowerCase() === 'foto' || 
-                        header.toLowerCase() === 'image') {
-                        
-                        console.log('Colonna immagine trovata! Valore:', value);
-                        
+                    // Se la colonna contiene un link Google Drive, trattalo come immagine
+                    const isGoogleDriveImage = value && typeof value === 'string' && 
+                                               value.includes('drive.google.com') && 
+                                               value.includes('/file/d/');
+                    
+                    if (isImageColumn || isGoogleDriveImage) {
                         if (value && value !== '') {
                             // Estrai URL dalla formula o usa direttamente il valore
                             let imageUrl = extractUrlFromImageFormula(value);
                             
-                            console.log('URL estratto:', imageUrl);
-                            
                             if (imageUrl) {
                                 const finalUrl = convertGoogleDriveUrl(imageUrl);
-                                console.log('URL finale:', finalUrl);
                                 
                                 const img = document.createElement('img');
                                 img.src = finalUrl;
@@ -366,9 +365,6 @@
                                 img.onmouseover = function() { this.style.transform = 'scale(1.05)'; };
                                 img.onmouseout = function() { this.style.transform = 'scale(1)'; };
                                 img.onclick = () => openModal(finalUrl);
-                                img.onload = function() {
-                                    console.log('Immagine caricata con successo!');
-                                };
                                 img.onerror = function() {
                                     console.error('Errore caricamento immagine:', finalUrl);
                                     this.style.display = 'none';
@@ -376,7 +372,6 @@
                                 };
                                 td.appendChild(img);
                             } else {
-                                console.log('Nessun URL valido trovato');
                                 td.textContent = '';
                             }
                         } else {
@@ -386,14 +381,6 @@
                     // Gestione altri dati
                     else if (value === null || value === undefined || value === '') {
                         td.textContent = '';
-                    } else if (typeof value === 'string' && isValidUrl(value)) {
-                        // Per altri link, mostra come link cliccabile
-                        const a = document.createElement('a');
-                        a.href = value;
-                        a.target = '_blank';
-                        a.textContent = '🔗 Link';
-                        a.title = value;
-                        td.appendChild(a);
                     } else if (typeof value === 'number') {
                         // Formatta i numeri
                         td.textContent = value.toLocaleString('it-IT');
